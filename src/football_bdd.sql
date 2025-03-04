@@ -63,8 +63,6 @@ CREATE TABLE `Ranking` (
     `team_id` INT NOT NULL DEFAULT 999,
     `league_id` INT NOT NULL,
     `type` ENUM('HOME', 'AWAY', 'TOTAL') NOT NULL,
-    `start_date` DATE NOT NULL DEFAULT '1990-09-24',
-    `end_date` DATE NOT NULL DEFAULT '1990-09-25',
     `position` SMALLINT NOT NULL DEFAULT 0,
     `points` SMALLINT NOT NULL DEFAULT 0,
     `played` SMALLINT NOT NULL DEFAULT 0,

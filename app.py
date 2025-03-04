@@ -1,16 +1,43 @@
-import os
 import jwt
 import datetime
-from fastapi import FastAPI, Query, Depends, HTTPException, Header
+from fastapi import FastAPI, Query, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import mysql.connector
+import pymongo
 from typing import Optional
 from pydantic import BaseModel
 from dotenv import dotenv_values
 
 config = dotenv_values()
 
-app = FastAPI()
+description = """
+FootballPredictorApp API permet d'accéder à des données sur les championnats de football français. 🚀
+
+## Équipe
+
+On peut **lire** les équipes existantes.
+
+## Joueurs
+
+Il est possible de :
+
+* ** Lire les entrées de joueurs de la bdd.
+
+## Classements
+
+Il est possible de :
+
+* Lire les entrées de classements selon les paramètres précisés
+"""
+
+app = FastAPI(title="FootballPredictorApp",
+              description=description,
+              summary="API pour accéder à la base de données des résultats des championnats français",
+              version="0.0.2",
+              contact={
+                "name": "Jonathan Pellan",
+                "email": "jonathan.pellan@protonmail.com",
+              })
 
 # Configuration de la sécurité
 security = HTTPBearer()
@@ -75,8 +102,17 @@ def get_db_connection():
         database="football_predictor"
     )
 
+def get_mongodb_connection():
+    """
+    Fonction qui permet de se connecter à la base de données MongoDB locale
+
+    :return: Objet MongoClient
+    """
+    client = pymongo.MongoClient('localhost', 27017)
+    return client
+
 @app.get("/equipe")
-async def get_employees(
+async def get_team(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     name: Optional[str] = Query(None, alias="name"),
     id: Optional[int] = Query(None, alias="id"),
@@ -85,15 +121,12 @@ async def get_employees(
     """
     Route qui permet de récupérer les équipes en fonction de différents critères
     
-    :param credentials: Credentials pour l'authentification
+    - **credentials**: Credentials pour l'authentification
+    - **name**: Nom approximatif de l'équipe recherchée
+    - **id**: Identifiant unique de l'équipe
+    - **limit**: Nombre d'équipes limite à retourner
 
-    :param name: Nom approximatif de l'équipe recherchée
-
-    :param id: Identifiant unique de l'équipe
-
-    :param limit: Nombre d'équipes limite à retourner
-
-    :return: Liste des employés
+    *Renvoie la liste des équipes correspondant aux critères*
     """
     # Vérification du token
     await verify_token(credentials)
@@ -123,7 +156,7 @@ async def get_employees(
     return results
 
 @app.get("/joueurs")
-async def get_player(
+async def get_players(
         credentials: HTTPAuthorizationCredentials = Depends(security),
         id : Optional[int] = Query(None, alias='id'),
         first_name : Optional[str] = Query(None, alias='prenom'),
@@ -136,23 +169,16 @@ async def get_player(
     """
     Route permettant de récupérer les joueurs en fonction de différents critères
     
-    :param credentials: Token d'authentification
+    - **credentials**: Token d'authentification
+    - **id**: Identifiant du joueur
+    - **prenom**: Prénom du joueur
+    - **nom**: Nom de famille du joueur
+    - **naissance**: Date de naissance du joueur (format : YYYY-MM-dd)
+    - **position**: Position dans l'équipe (valeurs possibles : 'Gardien', 'Defenseur', 'Milieu', 'Attaquant')
+    - **team**: Nom de l'équipe
+    - **limit**: Nombre maximum de joueurs affichés (30 par défaut)
 
-    :param id: Identifiant du joueur
-
-    :param prenom: Prénom du joueur
-
-    :param nom: Nom de famille du joueur
-
-    :param naissance: Date de naissance du joueur (format : YYYY-MM-dd)
-
-    :param position: Position dans l'équipe (valeur possibles : 'Gardien', 'Defenseur', 'Milieu', 'Attaquant')
-
-    :param team: Nom de l'équipe
-
-    :param limit: Nombre maximum de joueurs affichés (30 par défaut)
-
-    :return: Liste des joueurs correspondant aux critères
+    *Renvoie la liste des joueurs correspondant aux critères*
     """
     await verify_token(credentials)
 
@@ -160,13 +186,13 @@ async def get_player(
     cursor = connection.cursor(dictionary=True)
     query = ""
     if team:
-        query = f"SELECT Player.* FROM Player JOIN Team ON Player.team_id = Team.id WHERE name LIKE '%{team}%'"
+        query = f"SELECT Player.* FROM Player JOIN Team ON Player.team_id = Team.id WHERE (name LIKE '%{team}%' OR shortname LIKE '%{team}%')"
     else:
         query = "SELECT * FROM Player WHERE 1=1"
     params = []
 
     if id:
-        query += " AND id = %s"
+        query += " AND Player.id = %s"
         params.append(id)
     if first_name:
         query += " AND first_name = %s"
@@ -189,6 +215,98 @@ async def get_player(
 
     cursor.close()
     connection.close()
+    return results
+
+@app.get('/classements')
+async def get_rankings(
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+        season: Optional[int] = Query(None, alias='saison'),
+        type_: Optional[str] = Query(None, alias='type'),
+        team: Optional[str] = Query(None, alias='equipe'),
+        league: Optional[str] = Query(None, alias='championnat'),
+        limit: Optional[int] = Query(10, alias='limit')
+):
+    """
+    Route permettant d'accéder aux historiques de classement
+
+    - **credentials**: Token d'authentification
+    - **season**: Année de début de la saison (ex : pour 2022-2023, on utilise 2022)
+    - **type_**: Type de classement ('TOTAL', 'HOME', 'AWAY')
+    - **team**: Nom de l'équipe
+    - **league**: Compétition à sélectionner
+    - **limit**: Nombre maximum de résultats (10 par défaut)
+
+    *Renvoie la liste des classements correspondant à la requête*
+    """
+    await verify_token(credentials)
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = ("SELECT position, league.name, league.season, team.name, type, played, goals_for, "
+             "goals_against, won, draw, lost, points FROM `Ranking` JOIN `Team` ON Ranking.team_id = Team.id"
+             " JOIN `League` ON Ranking.team_id = League.id WHERE 1=1")
+    params = []
+
+    if season:
+        query += " AND League.season = %s"
+        params.append(season)
+    if team:
+        query += " AND (Team.name LIKE '%%%s%' OR Team.shortname LIKE '%%%s%')"
+        params.append(team)
+        params.append(team)
+    if league:
+        query += " AND League.name = %s"
+        params.append(league)
+    if type_:
+        query += " AND type = %s"
+        params.append(type_)
+
+    query += " LIMIT %s"
+    params.append(limit)
+
+    cursor.execute(query, params)
+    results = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+    return results
+
+@app.get('/matches')
+async def get_matches(
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+        season: Optional[int] = Query(None, alias='saison'),
+        matchday: Optional[int] = Query(None, alias='journee'),
+        league: Optional[str] = Query(None, alias='championnat'),
+        limit: Optional[int] = Query(10, alias='limit')
+):
+    """
+    Route permettant d'accéder aux résultats/affiches des matchs
+    
+    - **credentials** : Token d'authentification
+    - **season** : Année de début de la saison
+    - **matchday** : Journée à sélectionner (entre 1 et 34 ou 38 selon la saison)
+    - **league** : Championnat à sélectionner ('Ligue 1' et 'Ligue 2')
+    
+    *Renvoie la liste des résultats/affiches correspondant à la requête"""
+    await verify_token(credentials)
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    client = get_mongodb_connection()
+    db = client['football_predictor']
+    matches = db['matches']
+    query = {}
+
+    if season:
+        query['season'] = str(f"{season}-{season+1}")
+    if matchday:
+        query['matchday'] = matchday
+    if league and league in ['Ligue 1', 'Ligue 2']:
+        query['league'] = league
+
+    results_mongo = matches.find(query, projection={ '_id' : False }, limit=limit)
+    results = list(results_mongo)
+    client.close()
     return results
 
 if __name__ == "__main__":
