@@ -51,14 +51,6 @@ CREATE TABLE `Staff` (
     FOREIGN KEY (`team_id`) REFERENCES `Team` (`id`) ON UPDATE CASCADE ON DELETE SET DEFAULT
 );
 
-CREATE TABLE `Referee` (
-    `id` INT PRIMARY KEY AUTO_INCREMENT,
-    `first_name` VARCHAR(50) NOT NULL,
-    `last_name` VARCHAR(50) NOT NULL,
-    `birthdate` DATE,
-    `nationality` VARCHAR(100)
-);
-
 CREATE TABLE `Ranking` (
     `team_id` INT NOT NULL DEFAULT 999,
     `league_id` INT NOT NULL,

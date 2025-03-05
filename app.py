@@ -21,13 +21,19 @@ On peut **lire** les équipes existantes.
 
 Il est possible de :
 
-* ** Lire les entrées de joueurs de la bdd.
+* Lire les entrées de joueurs de la bdd.
 
 ## Classements
 
 Il est possible de :
 
 * Lire les entrées de classements selon les paramètres précisés
+
+## Matchs
+
+Il est possible de :
+
+* Lire les résultats des matchs selon les paramètres précisés
 """
 
 app = FastAPI(title="FootballPredictorApp",
@@ -66,8 +72,9 @@ def generate_token(request: TokenRequest):
     """
     Route qui permet de générer un token pour un utilisateur qui saisit son mot de passe
     
-    :param request: Objet TokenRequest contenant le mot de passe et la durée
-    :return: Token JWT
+    - **request**: Objet TokenRequest contenant le mot de passe et la durée
+    
+    *Renvoie un token JWT en cas d'authentification réussie*
     """
     if request.password != config['API_PASSWORD']:
         raise HTTPException(status_code=401, detail="Invalid password")
@@ -287,11 +294,10 @@ async def get_matches(
     - **matchday** : Journée à sélectionner (entre 1 et 34 ou 38 selon la saison)
     - **league** : Championnat à sélectionner ('Ligue 1' et 'Ligue 2')
     
-    *Renvoie la liste des résultats/affiches correspondant à la requête"""
+    *Renvoie la liste des résultats/affiches correspondant à la requête*
+    """
     await verify_token(credentials)
 
-    connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
     client = get_mongodb_connection()
     db = client['football_predictor']
     matches = db['matches']

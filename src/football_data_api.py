@@ -22,7 +22,7 @@ for i in range(2022, 2025):
     with open(f"../data/ligue1_{i}.json", "w") as file:
         file.write(json.dumps(parsed_response, indent=4))
     # Temps d'attente entre requêtes
-    time.sleep(30)
+    time.sleep(90)
 session.close()
 
 # Extraction des ids des équipes de cette saison et stockage dans une liste
@@ -57,7 +57,7 @@ for id in team_id_list:
         # On créé un fichier pour chaque équipe
         file.write(json.dumps(parsed_response, indent=4))
         # Temps d'attente entre 2 requêtes
-        time.sleep(30)
+        time.sleep(90)
 session.close()
 
 #############################################################################
