@@ -14,32 +14,33 @@ description = """
 FootballPredictorApp API permet d'accéder à des données sur les championnats de football français. 🚀
 
 ## Équipe
+Il est possible de :
 
-On peut **lire** les équipes existantes.
+* **Lire** les équipes existantes en fonction des paramètres renseignés
 
 ## Joueurs
 
 Il est possible de :
 
-* Lire les entrées de joueurs de la bdd.
+* **Lire** les joueurs sélectionnés en fonction des paramètres renseignés
 
 ## Classements
 
 Il est possible de :
 
-* Lire les entrées de classements selon les paramètres précisés
+* **Lire** les entrées de classements selon les paramètres précisés
 
 ## Matchs
 
 Il est possible de :
 
-* Lire les résultats des matchs selon les paramètres précisés
+* **Lire** les résultats des matchs selon les paramètres précisés
 """
 
-app = FastAPI(title="FootballPredictorApp",
+app = FastAPI(title="FootballPredictorAPI",
               description=description,
               summary="API pour accéder à la base de données des résultats des championnats français",
-              version="0.0.2",
+              version="0.1.1",
               contact={
                 "name": "Jonathan Pellan",
                 "email": "jonathan.pellan@protonmail.com",

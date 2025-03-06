@@ -68,4 +68,6 @@ CREATE TABLE `Ranking` (
     PRIMARY KEY (`team_id`, `league_id`, `type`)
 );
 
+INSERT INTO `Team` (`id`,`name`,`shortname`,`stadium`,`founded`) VALUES (999,'Equipe inconnue', 'Inconnu','Stade inconnu', 1900);
+
 flush /*!50503 binary */ logs;

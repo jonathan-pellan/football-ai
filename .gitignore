@@ -170,5 +170,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Json files that are the result of API calls and webscraping
-data/
+# JSON/CSV files that are the result of API calls and webscraping
+data/competition/*
+data/matches/*
+data/teams/*
