@@ -2,6 +2,12 @@
 L'application football-ai est une application permettant à partir de données historiques et actualisées régulièrement de championnats de football, de faire des prédictions de résultats. L'application ne supporte actuellement que les championnats français de Ligue 1 et Ligue 2, mais sera étendue à l'avenir à d'autres championnats.
 
 ## Changelog
+* 0.1.2
+    - Ajout d'un notebook de test de l'API **test/api_test.ipynb**
+    - Correction de bugs dans l'API
+    - Ajout du script de mise à jour automatique des classements **src/automatic_update.py**
+    - Mise à jour de la documentation
+    
 * 0.1.1
     - Mise à jour de la documentation
     - Ajout d'un template pour le fichier *.env* : **.env.example**
@@ -40,6 +46,11 @@ source ./src/football_bdd.sql
 ```
 
 * Enfin on éxécute le script data_cleaning_insertion.py qui va nettoyer les données, les agréger et les enrichir puis les insérer dans les bases MySQL et MongoDB
+
+* Pour permettre la mise à jour automatique des classements, on créé une tâche CRONTAB :
+```crontab
+@weekly cd <path_to_project> && . env/bin/activate && python src/automatic_update.py >> logs.log 2>&1
+```
 
 ## Lancement de l'API
 Une fois la base de donnée remplie, on peut lancer localement l'API avec la commande suivante, depuis l'environnement virtuel et en étant situé à la racine du projet :

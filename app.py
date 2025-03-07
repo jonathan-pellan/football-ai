@@ -40,7 +40,7 @@ Il est possible de :
 app = FastAPI(title="FootballPredictorAPI",
               description=description,
               summary="API pour accéder à la base de données des résultats des championnats français",
-              version="0.1.1",
+              version="0.1.2",
               contact={
                 "name": "Jonathan Pellan",
                 "email": "jonathan.pellan@protonmail.com",
@@ -73,7 +73,7 @@ def generate_token(request: TokenRequest):
     """
     Route qui permet de générer un token pour un utilisateur qui saisit son mot de passe
     
-    - **request**: Objet TokenRequest contenant le mot de passe et la durée
+    - **request**: Objet TokenRequest contenant le mot de passe
     
     *Renvoie un token JWT en cas d'authentification réussie*
     """
@@ -122,15 +122,14 @@ def get_mongodb_connection():
 @app.get("/equipe")
 async def get_team(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    name: Optional[str] = Query(None, alias="name"),
+    name: Optional[str] = Query(None, alias="nom"),
     id: Optional[int] = Query(None, alias="id"),
     limit: Optional[int] = Query(10, alias="limit")
 ):
     """
     Route qui permet de récupérer les équipes en fonction de différents critères
     
-    - **credentials**: Credentials pour l'authentification
-    - **name**: Nom approximatif de l'équipe recherchée
+    - **nom**: Nom approximatif de l'équipe recherchée
     - **id**: Identifiant unique de l'équipe
     - **limit**: Nombre d'équipes limite à retourner
 
@@ -177,13 +176,12 @@ async def get_players(
     """
     Route permettant de récupérer les joueurs en fonction de différents critères
     
-    - **credentials**: Token d'authentification
     - **id**: Identifiant du joueur
     - **prenom**: Prénom du joueur
     - **nom**: Nom de famille du joueur
     - **naissance**: Date de naissance du joueur (format : YYYY-MM-dd)
     - **position**: Position dans l'équipe (valeurs possibles : 'Gardien', 'Defenseur', 'Milieu', 'Attaquant')
-    - **team**: Nom de l'équipe
+    - **equipe**: Nom de l'équipe
     - **limit**: Nombre maximum de joueurs affichés (30 par défaut)
 
     *Renvoie la liste des joueurs correspondant aux critères*
@@ -237,11 +235,10 @@ async def get_rankings(
     """
     Route permettant d'accéder aux historiques de classement
 
-    - **credentials**: Token d'authentification
-    - **season**: Année de début de la saison (ex : pour 2022-2023, on utilise 2022)
-    - **type_**: Type de classement ('TOTAL', 'HOME', 'AWAY')
-    - **team**: Nom de l'équipe
-    - **league**: Compétition à sélectionner
+    - **saison**: Année de début de la saison (ex : pour 2022-2023, on utilise 2022)
+    - **type**: Type de classement ('TOTAL', 'HOME', 'AWAY')
+    - **equipe**: Nom de l'équipe
+    - **championnat**: Compétition à sélectionner
     - **limit**: Nombre maximum de résultats (10 par défaut)
 
     *Renvoie la liste des classements correspondant à la requête*
@@ -252,16 +249,14 @@ async def get_rankings(
     cursor = connection.cursor(dictionary=True)
     query = ("SELECT position, league.name, league.season, team.name, type, played, goals_for, "
              "goals_against, won, draw, lost, points FROM `Ranking` JOIN `Team` ON Ranking.team_id = Team.id"
-             " JOIN `League` ON Ranking.team_id = League.id WHERE 1=1")
+             " JOIN `League` ON Ranking.league_id = League.id WHERE 1=1")
     params = []
 
     if season:
         query += " AND League.season = %s"
         params.append(season)
     if team:
-        query += " AND (Team.name LIKE '%%%s%' OR Team.shortname LIKE '%%%s%')"
-        params.append(team)
-        params.append(team)
+        query += f" AND (Team.name LIKE '%{team}%' OR Team.shortname LIKE '%{team}%')"
     if league:
         query += " AND League.name = %s"
         params.append(league)
@@ -290,10 +285,9 @@ async def get_matches(
     """
     Route permettant d'accéder aux résultats/affiches des matchs
     
-    - **credentials** : Token d'authentification
-    - **season** : Année de début de la saison
-    - **matchday** : Journée à sélectionner (entre 1 et 34 ou 38 selon la saison)
-    - **league** : Championnat à sélectionner ('Ligue 1' et 'Ligue 2')
+    - **saison** : Année de début de la saison
+    - **journee** : Journée à sélectionner (entre 1 et 34 ou 38 selon la saison)
+    - **championnat** : Championnat à sélectionner ('Ligue 1' et 'Ligue 2')
     
     *Renvoie la liste des résultats/affiches correspondant à la requête*
     """
