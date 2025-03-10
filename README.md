@@ -2,7 +2,7 @@
 L'application football-ai est une application permettant à partir de données historiques et actualisées régulièrement de championnats de football, de faire des prédictions de résultats. L'application ne supporte actuellement que les championnats français de Ligue 1 et Ligue 2, mais sera étendue à l'avenir à d'autres championnats.
 
 ## Changelog
-* 0.1.4
+* 0.1.3b
     - Correction d'une erreur dans la documentation
 
 * 0.1.3
